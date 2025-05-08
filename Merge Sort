@@ -1,0 +1,71 @@
+// merge_sort_openmp.cpp
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <omp.h>
+#include <algorithm>
+
+using namespace std;
+
+vector<int> generateRandomVector(int size) {
+    vector<int> vec(size);
+    for (int &x : vec) {
+        x = rand() % 1000;
+    }
+    return vec;
+}
+
+void merge(vector<int> &arr, int left, int mid, int right) {
+    vector<int> temp(right - left + 1);
+    int i = left, j = mid + 1, k = 0;
+
+    while (i <= mid && j <= right) {
+        temp[k++] = (arr[i] <= arr[j]) ? arr[i++] : arr[j++];
+    }
+    while (i <= mid) temp[k++] = arr[i++];
+    while (j <= right) temp[k++] = arr[j++];
+
+    copy(temp.begin(), temp.end(), arr.begin() + left);
+}
+
+void mergeSort(vector<int> &arr, int left, int right) {
+    if (left < right) {
+        int mid = (left + right) / 2;
+        mergeSort(arr, left, mid);
+        mergeSort(arr, mid + 1, right);
+        merge(arr, left, mid, right);
+    }
+}
+
+void parallelMergeSort(vector<int> &arr, int left, int right) {
+    if (left < right) {
+        int mid = (left + right) / 2;
+        #pragma omp parallel sections
+        {
+            #pragma omp section
+            parallelMergeSort(arr, left, mid);
+            #pragma omp section
+            parallelMergeSort(arr, mid + 1, right);
+        }
+        merge(arr, left, mid, right);
+    }
+}
+
+int main() {
+    srand(time(0));
+    const int SIZE = 10000;
+    vector<int> vec = generateRandomVector(SIZE);
+
+    vector<int> seq = vec;
+    clock_t start = clock();
+    mergeSort(seq, 0, SIZE - 1);
+    cout << "Sequential Merge Sort Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << " seconds\n";
+
+    vector<int> par = vec;
+    start = clock();
+    parallelMergeSort(par, 0, SIZE - 1);
+    cout << "Parallel Merge Sort Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << " seconds\n";
+
+    return 0;
+}
