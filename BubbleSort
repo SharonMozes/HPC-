@@ -1,0 +1,58 @@
+// bubble_sort_openmp.cpp
+#include <iostream>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <omp.h>
+#include <algorithm>
+
+using namespace std;
+
+vector<int> generateRandomVector(int size) {
+    vector<int> vec(size);
+    for (int &x : vec) {
+        x = rand() % 1000;
+    }
+    return vec;
+}
+
+void bubbleSort(vector<int> &arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+void parallelBubbleSort(vector<int> &arr) {
+    int n = arr.size();
+    for (int i = 0; i < n - 1; i++) {
+        #pragma omp parallel for
+        for (int j = (i % 2); j < n - 1; j += 2) {
+            if (arr[j] > arr[j + 1]) {
+                swap(arr[j], arr[j + 1]);
+            }
+        }
+    }
+}
+
+int main() {
+    srand(time(0));
+    const int SIZE = 10000;
+    vector<int> vec = generateRandomVector(SIZE);
+
+    vector<int> seq = vec;
+    clock_t start = clock();
+    bubbleSort(seq);
+    cout << "Sequential Bubble Sort Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << " seconds\n";
+
+    vector<int> par = vec;
+    start = clock();
+    parallelBubbleSort(par);
+    cout << "Parallel Bubble Sort Time: " << (double)(clock() - start) / CLOCKS_PER_SEC << " seconds\n";
+
+    return 0;
+}
